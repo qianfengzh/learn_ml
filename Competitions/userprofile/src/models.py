@@ -13,6 +13,13 @@ from sklearn.ensemble import RandomForestRegressor
 lin_reg = LinearRegression()
 # featureV1: 常规处理，未增加特征
 # train_score: 0.0455
+#------------------------------
+# featureV2: 常规处理，增加4个log处理特征（['net_age_m', 'm_social_persons', 'm_cost', 'last_6m_avg_consume']）
+# train_score: 0.057
+#------------------------------
+# featureV3: 常规处理，对所有数字类特征增加log处理特征
+# train_score: 0.058
+#------------------------------
 
 rf_reg = RandomForestRegressor(n_estimators=10, max_depth=5, criterion="mae", max_features="sqrt")
 # featureV1: 常规处理，未增加特征
@@ -35,4 +42,4 @@ def cross_val(model=lin_reg):
 
 
 if __name__ == "__main__":
-    cross_val(model=rf_reg)
+    cross_val(model=lin_reg)

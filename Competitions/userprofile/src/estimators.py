@@ -3,6 +3,7 @@
 
 
 import numpy as np
+import pandas as pd
 from sklearn.base import BaseEstimator, TransformerMixin
 
 
@@ -16,6 +17,22 @@ class DataFrameSelector(BaseEstimator, TransformerMixin):
 
     def transform(self, X):
         return X[self.__attribute_names]
+
+
+class CombinedLogAttributes(BaseEstimator, TransformerMixin):
+    def __init__(self, attribute_names):
+        self.attribute_names = "*log_".join(attribute_names).split("*")
+        self.attribute_names[0] = "log_" + self.attribute_names[0]
+
+    def fit(self, X, y=None):
+        return self
+
+    def transform(self, X, y=None):
+        # print("X shape: ", X.shape)
+        log_df = X.apply(lambda x: np.log10(x+1))
+        # print("log estimator shape: ", log_df.shape)
+        return log_df.values
+
 
 
 class CombinedAttributesAdder(BaseEstimator, TransformerMixin):

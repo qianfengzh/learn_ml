@@ -5,7 +5,7 @@ import os
 import pandas as pd
 from sklearn.pipeline import Pipeline, FeatureUnion
 from sklearn.preprocessing import StandardScaler
-from estimators import DataFrameSelector
+from estimators import DataFrameSelector, CombinedAttributesAdder, CombinedLogAttributes
 from preprocessing import CategoricalEncoder
 
 PROJECT_DIR = '.'
@@ -55,6 +55,7 @@ class UserprofilePipeline(object):
         self.binary_attribs = ['is_real_name', 'is_undegraduate', 'is_blacklist', 'is_4G_ill', 'is_arrears'
             , 'is_offen_mall', 'is_m_WanDa', 'is_m_Sam', 'is_m_movies', 'is_m_tour', 'is_m_pay_gym']
         self.cat_attribs = ['charge_sensitivity']
+        self.log_attribs = ['net_age_m', 'm_social_persons', 'm_cost', 'last_6m_avg_consume']
         self.full_pipeline = None
 
     def __create_pipepine(self):
@@ -73,15 +74,18 @@ class UserprofilePipeline(object):
             ('cat_encoder', CategoricalEncoder(encoding="onehot-dense")),
         ])
 
-        # extra_pipeline = Pipeline([
-        #     ("extra_feature", CombinedAttributesAdder(train_data)),
-        # ])
+        extra_pipeline = Pipeline([
+            # ("selector", DataFrameSelector(self.log_attribs)),
+            ("selector", DataFrameSelector(self.num_attribs)),
+            ("extra_feature", CombinedLogAttributes(self.num_attribs)),
+            # ("std_scaler", StandardScaler()),
+        ])
 
         self.full_pipeline = FeatureUnion(transformer_list=[
             ("num_pipeline", num_pipeline),
             ("binary_pipeline", binary_pipeline),
             ("cat_pipeline", cat_pipeline),
-            #         ("extra_pipeline", extra_pipeline),
+            ("extra_pipeline", extra_pipeline),
         ])
 
     def run_pipeline(self, X):
@@ -89,14 +93,21 @@ class UserprofilePipeline(object):
         return self.full_pipeline.fit_transform(X)
 
 
-def data_preprocessing():
+def data_preprocessing(is_train=1):
     userprofile_data = UserprofileData()
     userprofile_pipeline = UserprofilePipeline()
-    X, y = userprofile_data.load_train_data(TRAIN_DATA)
+    X, y = None, None
+    if is_train:
+        X, y = userprofile_data.load_train_data(TRAIN_DATA)
+    else:
+        X = userprofile_data.load_test_data(TEST_DATA)
     X_prepared = userprofile_pipeline.run_pipeline(X)
     return X_prepared, y
 
 
 if __name__ == "__main__":
-    userprofile_pipeline = UserprofilePipeline()
-    print(dir(userprofile_pipeline))
+    # userprofile_pipeline = UserprofilePipeline()
+    # print(dir(userprofile_pipeline))
+    X_prepared, y = data_preprocessing()
+    print(X_prepared.shape)
+    print(X_prepared[0])
