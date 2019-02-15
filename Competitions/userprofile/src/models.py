@@ -73,8 +73,17 @@ def cross_val(X_train, y_train, model=lin_reg):
 
 
 def feature_import_analysis(X_train, y_train, model=lin_reg):
-    model.fit(X_train, y_train)
-    feature_importance = sorted(zip(model.feature_importances_, X_trian.columns), reverse=True)
+    print(X_train.shape)
+    X = np.c_[X_trian.values
+        ,X_trian[['is_4G_ill','is_arrears','is_m_tour','is_m_WanDa','is_offen_mall','is_m_pay_gym']].values.sum(axis=1).reshape((-1, 1))]
+    print(X.shape)
+    model.fit(X, y_train)
+    data_columns = X_trian.columns.values.tolist()
+    data_columns.append("bi_sum")
+    # data_columns = np.array(data_columns)
+    print(len(model.feature_importances_))
+    print(len(data_columns))
+    feature_importance = sorted(zip(model.feature_importances_, data_columns), reverse=True)
     for item in feature_importance:
         print(item)
 

@@ -194,6 +194,7 @@ def data_preprocessing(userprofile_data, is_train=1):
         # 训练数据清洗，对轻微异常分布的数据删除
         # filter_attribs = ["log_m_social_persons", "log_last_6m_avg_consume", "log_m_cost"]
         # X, y = __outlier_filter(X, y, filter_attribs)
+        # return X.values, y.values.reshape((-1, 1))
         return X, y.values.reshape((-1, 1))
     else:
         return X.values
