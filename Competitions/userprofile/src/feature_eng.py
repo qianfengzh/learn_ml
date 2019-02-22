@@ -5,7 +5,7 @@ import os
 import numpy as np
 import pandas as pd
 from sklearn.pipeline import Pipeline, FeatureUnion
-from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import StandardScaler, PolynomialFeatures
 from estimators import DataFrameSelector, CombinedAttributesAdder, CombinedLogAttributes, CombinedBiSumAttributes
 from preprocessing import CategoricalEncoder
 
@@ -75,6 +75,7 @@ class UserprofilePipeline(object):
         ##### Pipeline
         num_pipeline = Pipeline([
             ("selector", DataFrameSelector(self.num_attribs)),
+            # (PolynomialFeatures(degree=2, interaction_only=True, include_bias=False)),
             # ("std_scaler", StandardScaler()),
         ])
 
@@ -112,6 +113,7 @@ class UserprofilePipeline(object):
         return self.full_pipeline.fit_transform(X)
 
 
+
 def __outlier_filter(X, y=None, attribs=None):
     idx_list = []
     stats = X[attribs].describe()
@@ -119,18 +121,17 @@ def __outlier_filter(X, y=None, attribs=None):
     c_max = stats.loc["75%"] + 1.5 * IQR
     c_min = stats.loc["25%"] - 1.5 * IQR
     for attrib in attribs:
-        idxs = X[(X[attrib] >= c_max.loc[attrib]) | (X[attrib] <= c_min.loc[attrib])].index.values
-        # print(attrib)
-        # print(len(idxs))
-        idx_list.extend(idxs)
-    idx_set = set(idx_list)
-    print("[outlier] filter rows: ", len(idx_set))
-    X.drop(idx_set, inplace=True)
-    X.reset_index(drop=True, inplace=True)
-    if y is not None:
-        y.drop(idx_set, inplace=True)
-        y.reset_index(drop=True, inplace=True)
-    # y = np.delete(y, list(idx_set),axis=0)
+        X.loc[(X[attrib] >= c_max.loc[attrib]), attrib] = c_max
+        X.loc[(X[attrib] >= c_min.loc[attrib]), attrib] = c_min
+        # X[(X[attrib] <= c_min.loc[attrib])][attrib] = c_min
+    # idx_set = set(idx_list)
+    # print("[outlier] filter rows: ", len(idx_set))
+
+    # X.drop(idx_set, inplace=True)
+    # X.reset_index(drop=True, inplace=True)
+    # if y is not None:
+    #     y.drop(idx_set, inplace=True)
+    #     y.reset_index(drop=True, inplace=True)
     return X, y
 
 
@@ -189,15 +190,16 @@ def data_preprocessing(userprofile_data, is_train=1):
 
     # columns.append("bi_sum")
     X = pd.DataFrame(X, columns=columns)
+    # X = pd.DataFrame(X)
 
     if is_train:
         # 训练数据清洗，对轻微异常分布的数据删除
-        # filter_attribs = ["log_m_social_persons", "log_last_6m_avg_consume", "log_m_cost"]
+        filter_attribs = ["log_m_social_persons", "log_last_6m_avg_consume", "log_m_cost"]
         # X, y = __outlier_filter(X, y, filter_attribs)
         # return X.values, y.values.reshape((-1, 1))
         return X, y.values.reshape((-1, 1))
     else:
-        return X.values
+        return X
     # return X_prepared_filtered, y_filtered
 
 

@@ -4,10 +4,12 @@
 
 import numpy as np
 import pandas as pd
-from sklearn.base import BaseEstimator, TransformerMixin
-
+from sklearn.base import BaseEstimator, TransformerMixin, ClassifierMixin
 
 # DataFrameSelector
+from sklearn.utils import check_array
+
+
 class DataFrameSelector(BaseEstimator, TransformerMixin):
     def __init__(self, attribute_names):
         self.__attribute_names = attribute_names
@@ -28,7 +30,7 @@ class CombinedLogAttributes(BaseEstimator, TransformerMixin):
         return self
 
     def transform(self, X, y=None):
-        log_df = X.apply(lambda x: np.log10(x+1))
+        log_df = X.apply(lambda x: np.log(x+5))
         return log_df.values
 
 
@@ -67,3 +69,48 @@ class CombinedAttributesAdder(BaseEstimator, TransformerMixin):
         last_6m_avg_consume_log = np.log10(np.asarray(X[:, self.ix_last_6m_avg_consume] + 1, dtype=float))
         return np.c_[X, last_6m_consum_per_net_age, net_age_m_log
             , m_social_persons_log, m_cost_log, last_6m_avg_consume_log]
+
+
+class StackingEstimator(BaseEstimator, TransformerMixin):
+
+    def __init__(self, estimator):
+        self.estimator = estimator
+
+    def fit(self, X, y=None, **fit_params):
+        self.estimator.fit(X, y, **fit_params)
+        return self
+
+    def transform(self, X):
+        X = check_array(X)
+        X_transformed = np.copy(X)
+        # add class probabilities as a synthetic feature
+        if issubclass(self.estimator.__class__, ClassifierMixin) and hasattr(self.estimator, 'predict_proba'):
+            X_transformed = np.hstack((self.estimator.predict_proba(X), X))
+        # add class prodiction as a synthetic feature
+        X_transformed = np.hstack((np.reshape(self.estimator.predict(X), (-1, 1)), X_transformed))
+        return X_transformed
+
+# ############################
+# # Train the stacked models #
+# ############################
+#
+# stacked_pipeline = make_pipeline(
+#     StackingEstimator(estimator=LassoLarsCV(normalize=True)),
+#     StackingEstimator(estimator=GradientBoostingRegressor(learning_rate=0.001,
+#                                                           loss="huber",
+#                                                           max_depth=3,
+#                                                           max_features=0.55,
+#                                                           min_samples_leaf=18,
+#                                                           min_samples_split=14,
+#                                                           subsample=0.7),
+#                      ),
+#     LassoLarsCV()
+# )
+#
+# stacked_pipeline.fit(finaltrainset, y_train)
+#
+# #########################
+# # Predict the test data #
+# #########################
+#
+# results = stacked_pipeline.predict(finaltestset)
